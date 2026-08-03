@@ -63,6 +63,7 @@ abstract final class DatabaseSchema {
     '''CREATE TABLE IF NOT EXISTS payments (
       id INTEGER PRIMARY KEY AUTOINCREMENT, subscriber_id INTEGER NOT NULL,
       amount REAL NOT NULL, payment_date TEXT NOT NULL, payment_method TEXT, notes TEXT,
+      horse_id INTEGER, boarding_payment_id INTEGER,
       created_at TEXT DEFAULT (datetime('now','localtime')),
       FOREIGN KEY (subscriber_id) REFERENCES subscribers(id) ON DELETE CASCADE)''',
     '''CREATE TABLE IF NOT EXISTS payment_invoices (
@@ -83,6 +84,7 @@ abstract final class DatabaseSchema {
       id INTEGER PRIMARY KEY AUTOINCREMENT, horse_id INTEGER NOT NULL, room_number TEXT,
       amount REAL NOT NULL DEFAULT 0, payment_date TEXT NOT NULL, due_date TEXT,
       is_paid INTEGER DEFAULT 1, notes TEXT, image_path TEXT,
+      subscriber_id INTEGER, payment_method TEXT, payment_id INTEGER,
       created_at TEXT DEFAULT (datetime('now','localtime')),
       FOREIGN KEY (horse_id) REFERENCES horses(id) ON DELETE CASCADE)''',
     '''CREATE TABLE IF NOT EXISTS treatment_records (
@@ -234,6 +236,8 @@ abstract final class DatabaseSchema {
     },
     'payments': {
       'subscriber_id',
+      'horse_id',
+      'boarding_payment_id',
       'amount',
       'payment_date',
       'payment_method',
@@ -260,11 +264,14 @@ abstract final class DatabaseSchema {
     },
     'boarding_payments': {
       'horse_id',
+      'subscriber_id',
+      'payment_id',
       'room_number',
       'amount',
       'payment_date',
       'due_date',
       'is_paid',
+      'payment_method',
       'notes',
       'image_path',
     },

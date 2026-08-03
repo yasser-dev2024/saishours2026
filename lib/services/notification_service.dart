@@ -24,7 +24,15 @@ class NotificationService {
     null,
   );
   bool _initialized = false;
-  static const channelId = 'horse_club_alerts_jrs_alarm_v4';
+  static const channelVersion = '5';
+  static const channelId = 'horse_club_alerts_jrs_alarm_v$channelVersion';
+  static const _legacyChannels = <String>[
+    'horse_club_alerts',
+    'horse_club_alerts_jrs_alarm',
+    'horse_club_alerts_jrs_alarm_v2',
+    'horse_club_alerts_jrs_alarm_v3',
+    'horse_club_alerts_jrs_alarm_v4',
+  ];
 
   Future<void> initialize() async {
     if (_initialized) return;
@@ -53,6 +61,9 @@ class NotificationService {
         audioAttributesUsage: AudioAttributesUsage.alarm,
       ),
     );
+    for (final legacy in _legacyChannels) {
+      await android?.deleteNotificationChannel(channelId: legacy);
+    }
     _initialized = true;
     final launchDetails = await _plugin.getNotificationAppLaunchDetails();
     if (launchDetails?.didNotificationLaunchApp == true) {

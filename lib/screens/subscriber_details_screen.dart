@@ -1411,13 +1411,24 @@ class _InvoiceSheetBodyState extends State<_InvoiceSheetBody> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _add,
-                  icon: const Icon(Icons.attach_file),
-                  label: const Text('إضافة فاتورة'),
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _generate,
+                      icon: const Icon(Icons.receipt_long),
+                      label: const Text('إنشاء فاتورة'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _add,
+                      icon: const Icon(Icons.attach_file),
+                      label: const Text('إرفاق ملف'),
+                    ),
+                  ),
+                ],
               ),
             ),
             Expanded(
@@ -1469,6 +1480,66 @@ class _InvoiceSheetBodyState extends State<_InvoiceSheetBody> {
       ),
     ),
   );
+
+  Future<void> _generate() async {
+    final database = DatabaseService.instance;
+    final payment = await database.row('payments', widget.paymentId);
+    if (payment == null) return;
+    final subscriberId = (payment['subscriber_id'] as num?)?.toInt();
+    final horseId = (payment['horse_id'] as num?)?.toInt();
+    final subscriber = subscriberId == null
+        ? null
+        : await database.row('subscribers', subscriberId);
+    final horse = horseId == null
+        ? null
+        : await database.row('horses', horseId);
+    final invoiceData = <String, Object?>{
+      'invoice_number': 'PAY-${widget.paymentId.toString().padLeft(6, '0')}',
+      'subscriber_name': subscriber?['name'] ?? '—',
+      'member_code': subscriber?['member_code'] ?? '—',
+      'horse_name': horse?['name'] ?? '—',
+      'amount': payment['amount'],
+      'payment_date': payment['payment_date'],
+      'payment_method': payment['payment_method'] ?? '—',
+      'notes': payment['notes'] ?? '',
+    };
+    final bytes = await ReportService.instance.buildPdf(
+      ReportData(
+        title: 'فاتورة دفعة',
+        columns: const [
+          MapEntry('invoice_number', 'رقم الفاتورة'),
+          MapEntry('subscriber_name', 'المشترك'),
+          MapEntry('member_code', 'رقم العضوية'),
+          MapEntry('horse_name', 'الخيل'),
+          MapEntry('amount', 'المبلغ'),
+          MapEntry('payment_date', 'التاريخ'),
+          MapEntry('payment_method', 'طريقة الدفع'),
+          MapEntry('notes', 'ملاحظات'),
+        ],
+        rows: [invoiceData],
+        summary: const ['فاتورة قبض مرتبطة بالسجل المالي للنادي'],
+      ),
+    );
+    final directory = Directory(
+      p.join(database.appDirectory.path, 'payment_invoices'),
+    );
+    await directory.create(recursive: true);
+    final path = p.join(
+      directory.path,
+      'invoice_${widget.paymentId}_${DateTime.now().millisecondsSinceEpoch}.pdf',
+    );
+    await File(path).writeAsBytes(bytes, flush: true);
+    await database.saveRecord('payment_invoices', {
+      'payment_id': widget.paymentId,
+      'invoice_path': path,
+    });
+    if (!mounted) return;
+    setState(() => _revision++);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم إنشاء الفاتورة بهوية النادي وحفظها.')),
+    );
+  }
+
   Future<void> _add() async {
     final path = await FileService.instance.pickDocument(
       folder: 'payment_invoices',

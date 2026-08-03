@@ -72,7 +72,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      context.read<AppProvider>().refresh();
+      context.read<AppProvider>().onAppResumed();
     }
   }
 

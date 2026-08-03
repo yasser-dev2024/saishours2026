@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
 import '../backup/backup_service.dart';
@@ -11,7 +12,6 @@ import '../core/validators.dart';
 import '../database/database_service.dart';
 import '../providers/app_provider.dart';
 import '../services/file_service.dart';
-import '../services/notification_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -22,6 +22,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _clubName = TextEditingController();
   final _reminder = TextEditingController();
   final _subscriptionAlert = TextEditingController();
   final _contract = TextEditingController();
@@ -36,6 +37,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _loading = true;
   bool _saving = false;
   String _logoPath = '';
+  String _signaturePath = '';
   String _sealPath = '';
   List<FileSystemEntity> _backups = const [];
 
@@ -54,6 +56,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
+    _clubName.dispose();
     _reminder.dispose();
     _subscriptionAlert.dispose();
     _contract.dispose();
@@ -71,6 +74,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _load() async {
     final values = await DatabaseService.instance.settings();
+    _clubName.text = values['club_name'] ?? 'نادي الخيل';
     _reminder.text = values['reminder_days'] ?? '3';
     _subscriptionAlert.text = values['subscription_alert_days'] ?? '7';
     _contract.text = values['boarding_contract_text'] ?? '';
@@ -80,6 +84,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _warning.text = values['warning_color'] ?? '#D99B2B';
     _danger.text = values['danger_color'] ?? '#C94141';
     _logoPath = values['report_logo'] ?? '';
+    _signaturePath = values['club_signature'] ?? '';
     _sealPath = values['club_seal'] ?? '';
     _customServices
       ..clear()
@@ -138,6 +143,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   prefixIcon: Icon(Icons.badge),
                   hintText: AppConstants.appName,
                 ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _clubName,
+                maxLength: 120,
+                decoration: const InputDecoration(
+                  labelText: 'اسم النادي',
+                  helperText: 'يظهر في الفواتير والإيصالات والتقارير والعقود',
+                  prefixIcon: Icon(Icons.home_work_outlined),
+                ),
+                validator: (value) => AppValidators.name(value).isEmpty
+                    ? 'أدخل اسم النادي'
+                    : null,
               ),
               const SizedBox(height: 12),
               Row(
@@ -205,7 +223,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
           _section(
-            title: 'الشعار والختم',
+            title: 'هوية النادي في الفواتير والتقارير',
             icon: Icons.branding_watermark,
             children: [
               _imageSetting(
@@ -213,6 +231,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 path: _logoPath,
                 onChoose: () => _pickSettingImage('report_logo'),
                 onRemove: () => _removeSettingImage('report_logo'),
+              ),
+              const Divider(height: 28),
+              _imageSetting(
+                title: 'توقيع النادي في الفواتير والتقارير',
+                path: _signaturePath,
+                onChoose: () => _pickSettingImage('club_signature'),
+                onRemove: () => _removeSettingImage('club_signature'),
               ),
               const Divider(height: 28),
               _imageSetting(
@@ -295,20 +320,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.notifications_active_outlined),
-                title: const Text('السماح بإشعارات المواعيد والاشتراكات'),
-                trailing: FilledButton.tonal(
-                  onPressed: _requestNotifications,
-                  child: const Text('طلب الإذن'),
+                title: const Text('الإشعارات وصوت الإنذار يعملان افتراضيًا'),
+                subtitle: const Text(
+                  'لا يوجد مفتاح تفعيل داخل التطبيق. يُطلب إذن Android مرة واحدة فقط عند أول تشغيل.',
                 ),
-              ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.data_array),
-                title: const Text('البيانات التجريبية'),
-                subtitle: const Text('تُضاف فقط إذا كان سجل الخيول فارغًا.'),
-                trailing: FilledButton.tonal(
-                  onPressed: _insertSampleData,
-                  child: const Text('إدخال'),
+                trailing: TextButton(
+                  onPressed: openAppSettings,
+                  child: const Text('إعدادات Android'),
                 ),
               ),
               const Divider(),
@@ -539,11 +557,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await DatabaseService.instance.setSetting(key, path);
     if (!mounted) return;
     setState(() {
-      if (key == 'report_logo') {
-        _logoPath = path;
-      } else {
-        _sealPath = path;
-      }
+      if (key == 'report_logo') _logoPath = path;
+      if (key == 'club_signature') _signaturePath = path;
+      if (key == 'club_seal') _sealPath = path;
     });
   }
 
@@ -551,11 +567,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await DatabaseService.instance.setSetting(key, '');
     if (!mounted) return;
     setState(() {
-      if (key == 'report_logo') {
-        _logoPath = '';
-      } else {
-        _sealPath = '';
-      }
+      if (key == 'report_logo') _logoPath = '';
+      if (key == 'club_signature') _signaturePath = '';
+      if (key == 'club_seal') _sealPath = '';
     });
   }
 
@@ -565,6 +579,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final database = DatabaseService.instance;
     final values = <String, String>{
       'app_name': AppConstants.appName,
+      'club_name': AppValidators.name(_clubName.text),
       'reminder_days': _reminder.text,
       'subscription_alert_days': _subscriptionAlert.text,
       'boarding_contract_text': AppValidators.text(_contract.text, max: 20000),
@@ -642,21 +657,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (error) {
       _message('رُفضت الاستعادة: $error');
     }
-  }
-
-  Future<void> _requestNotifications() async {
-    final allowed = await NotificationService.instance.requestPermission();
-    _message(allowed ? 'تم السماح بالإشعارات.' : 'لم يُمنح إذن الإشعارات.');
-  }
-
-  Future<void> _insertSampleData() async {
-    final inserted = await DatabaseService.instance.insertSampleData();
-    if (mounted && inserted) await context.read<AppProvider>().dataChanged();
-    _message(
-      inserted
-          ? 'تم إدخال البيانات التجريبية.'
-          : 'لم تتغير البيانات لأن سجل الخيول غير فارغ.',
-    );
   }
 
   void _message(String text) {

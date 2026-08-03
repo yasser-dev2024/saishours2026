@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 abstract final class AppConstants {
   static const appName = 'سايس الخيل';
   static const packageId = 'com.abuammar.horseclub';
-  static const version = '1.0.0';
+  static const version = '1.3.0';
   static const databaseName = 'horses.db';
-  static const databaseVersion = 4;
+  static const databaseVersion = 5;
 
   static const navy = Color(0xFF10233F);
   static const navyLight = Color(0xFF1C3C64);

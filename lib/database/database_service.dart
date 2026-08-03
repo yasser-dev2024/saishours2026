@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -33,12 +33,6 @@ class DatabaseService {
     _appDirectory = Directory(p.join(documents.path, 'horse_club_mobile'));
     await _appDirectory.create(recursive: true);
     _databasePath = p.join(_appDirectory.path, AppConstants.databaseName);
-    final file = File(_databasePath);
-    if (!await file.exists()) {
-      final data = await rootBundle.load('assets/database/horses.db');
-      await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
-    }
-
     _database = await openDatabase(
       _databasePath,
       version: AppConstants.databaseVersion,
@@ -53,7 +47,24 @@ class DatabaseService {
       onOpen: _ensureSchema,
     );
     await _insertDefaultSettings();
-    await _migrateBundledFilePaths();
+    await _reconcilePaymentSources();
+    await autoUpdateSubscriberStatuses();
+  }
+
+  @visibleForTesting
+  Future<void> initializeForTesting({
+    required Database database,
+    required Directory appDirectory,
+  }) async {
+    await _database?.close();
+    _database = database;
+    _appDirectory = appDirectory;
+    await _appDirectory.create(recursive: true);
+    _databasePath = database.path;
+    await database.execute('PRAGMA foreign_keys=ON');
+    await _ensureSchema(database);
+    await _insertDefaultSettings();
+    await _reconcilePaymentSources();
     await autoUpdateSubscriberStatuses();
   }
 
@@ -72,6 +83,21 @@ class DatabaseService {
     await _ensureColumn(database, 'subscribers', 'horse_id', 'INTEGER');
     await _ensureColumn(database, 'subscribers', 'member_code', 'TEXT');
     await _ensureColumn(database, 'subscribers', 'is_vip', 'INTEGER DEFAULT 0');
+    await _ensureColumn(database, 'payments', 'horse_id', 'INTEGER');
+    await _ensureColumn(database, 'payments', 'boarding_payment_id', 'INTEGER');
+    await _ensureColumn(
+      database,
+      'boarding_payments',
+      'subscriber_id',
+      'INTEGER',
+    );
+    await _ensureColumn(
+      database,
+      'boarding_payments',
+      'payment_method',
+      'TEXT',
+    );
+    await _ensureColumn(database, 'boarding_payments', 'payment_id', 'INTEGER');
     await _ensureColumn(database, 'expenses', 'invoice_path', 'TEXT');
     await _ensureColumn(
       database,
@@ -165,6 +191,12 @@ class DatabaseService {
     await database.execute(
       "CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriber_member_code ON subscribers(member_code) WHERE member_code IS NOT NULL AND member_code<>''",
     );
+    await database.execute(
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_boarding_link ON payments(boarding_payment_id) WHERE boarding_payment_id IS NOT NULL',
+    );
+    await database.execute(
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_boarding_payment_link ON boarding_payments(payment_id) WHERE payment_id IS NOT NULL',
+    );
     await database.rawUpdate(
       "UPDATE subscribers SET member_code='S-' || printf('%05d',id) WHERE member_code IS NULL OR trim(member_code)=''",
     );
@@ -190,6 +222,7 @@ class DatabaseService {
   Future<void> _insertDefaultSettings() async {
     const values = <String, String>{
       'app_name': 'سايس الخيل',
+      'club_name': 'نادي الخيل',
       'reminder_days': '3',
       'subscription_alert_days': '7',
       'primary_color': '#10233F',
@@ -225,54 +258,6 @@ class DatabaseService {
       'key': 'app_name',
       'value': 'سايس الخيل',
     }, conflictAlgorithm: ConflictAlgorithm.replace);
-  }
-
-  Future<void> _migrateBundledFilePaths() async {
-    if (await getSetting('mobile_asset_migration_v1') == 'done') return;
-    final signatureDir = Directory(p.join(_appDirectory.path, 'signatures'));
-    final contractDir = Directory(p.join(_appDirectory.path, 'contracts'));
-    await signatureDir.create(recursive: true);
-    await contractDir.create(recursive: true);
-    const signatureNames = [
-      'tmpmm5301ud.png',
-      'tmptz09iyla.png',
-      'tmpalykq3sz.png',
-    ];
-    for (final name in signatureNames) {
-      final target = File(p.join(signatureDir.path, name));
-      if (!await target.exists()) {
-        final bytes = await rootBundle.load(
-          'assets/migration/signatures/$name',
-        );
-        await target.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
-      }
-    }
-    const contractNames = [
-      'contract_20260515_194252.pdf',
-      'contract_20260515_194649.pdf',
-    ];
-    for (final name in contractNames) {
-      final target = File(p.join(contractDir.path, name));
-      if (!await target.exists()) {
-        final bytes = await rootBundle.load('assets/migration/contracts/$name');
-        await target.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
-      }
-    }
-    final contracts = await db.query('boarding_contracts');
-    for (final row in contracts) {
-      final id = row['id'] as int;
-      final old = '${row['signature_path'] ?? ''}'.replaceAll('\\', '/');
-      final name = old.split('/').last;
-      if (signatureNames.contains(name)) {
-        await db.update(
-          'boarding_contracts',
-          {'signature_path': p.join(signatureDir.path, name)},
-          where: 'id=?',
-          whereArgs: [id],
-        );
-      }
-    }
-    await setSetting('mobile_asset_migration_v1', 'done');
   }
 
   void _checkTable(String table) {
@@ -420,6 +405,7 @@ class DatabaseService {
       final isNew = id == null;
       late final int recordId;
       if (isNew) {
+        await _rejectDuplicateLinkedPayment(txn, table, data);
         recordId = await txn.insert(table, data);
       } else {
         recordId = id;
@@ -436,8 +422,15 @@ class DatabaseService {
           whereArgs: [recordId],
         );
       }
-      await _syncRelationships(txn, table, recordId, data, isNew: isNew);
-      await _syncFinancial(txn, table, recordId, data, isNew: isNew);
+      final storedRows = await txn.query(
+        table,
+        where: 'id=?',
+        whereArgs: [recordId],
+        limit: 1,
+      );
+      final stored = Map<String, Object?>.from(storedRows.single);
+      await _syncRelationships(txn, table, recordId, stored, isNew: isNew);
+      await _syncFinancial(txn, table, recordId, stored, isNew: isNew);
       return recordId;
     });
   }
@@ -485,6 +478,10 @@ class DatabaseService {
           whereArgs: [horseId],
         );
       }
+    } else if (table == 'payments') {
+      await _syncPaymentLink(txn, id, data);
+    } else if (table == 'boarding_payments') {
+      await _syncBoardingPaymentLink(txn, id, data);
     } else if (table == 'expenses') {
       final horseId = data['horse_id'] as int?;
       final category = '${data['category'] ?? ''}';
@@ -557,6 +554,343 @@ class DatabaseService {
     }
   }
 
+  Future<Map<String, Object?>?> _subscriberPaymentContext(
+    Transaction txn,
+    Object? subscriberValue,
+  ) async {
+    final subscriberId = (subscriberValue as num?)?.toInt();
+    if (subscriberId == null) return null;
+    final rows = await txn.query(
+      'subscribers',
+      where: 'id=?',
+      whereArgs: [subscriberId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    final subscriber = rows.first;
+    var horseId = (subscriber['horse_id'] as num?)?.toInt();
+    horseId ??= Sqflite.firstIntValue(
+      await txn.rawQuery(
+        'SELECT id FROM horses WHERE subscriber_id=? ORDER BY id LIMIT 1',
+        [subscriberId],
+      ),
+    );
+    return {
+      'subscriber_id': subscriberId,
+      'horse_id': horseId,
+      'is_boarding': '${subscriber['subscription_type'] ?? ''}'.contains(
+        'إيواء',
+      ),
+    };
+  }
+
+  Future<Map<String, Object?>?> _horsePaymentContext(
+    Transaction txn,
+    Object? horseValue,
+  ) async {
+    final horseId = (horseValue as num?)?.toInt();
+    if (horseId == null) return null;
+    final rows = await txn.query(
+      'horses',
+      where: 'id=?',
+      whereArgs: [horseId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    var subscriberId = (rows.first['subscriber_id'] as num?)?.toInt();
+    subscriberId ??= Sqflite.firstIntValue(
+      await txn.rawQuery(
+        'SELECT id FROM subscribers WHERE horse_id=? ORDER BY id LIMIT 1',
+        [horseId],
+      ),
+    );
+    return {'horse_id': horseId, 'subscriber_id': subscriberId};
+  }
+
+  Future<void> _rejectDuplicateLinkedPayment(
+    Transaction txn,
+    String table,
+    Map<String, Object?> data,
+  ) async {
+    if (table == 'payments') {
+      final context = await _subscriberPaymentContext(
+        txn,
+        data['subscriber_id'],
+      );
+      if (context == null ||
+          context['is_boarding'] != true ||
+          context['horse_id'] == null) {
+        return;
+      }
+      final duplicate = await txn.query(
+        'boarding_payments',
+        columns: ['id'],
+        where:
+            'horse_id=? AND amount=? AND payment_date=? AND is_paid=1 AND payment_id IS NOT NULL',
+        whereArgs: [context['horse_id'], data['amount'], data['payment_date']],
+        limit: 1,
+      );
+      if (duplicate.isNotEmpty) {
+        throw const FormatException(
+          'هذه الدفعة مسجلة بالفعل في ملف الخيل وتظهر تلقائيًا للمشترك.',
+        );
+      }
+    } else if (table == 'boarding_payments' &&
+        (data['is_paid'] as num? ?? 1) == 1) {
+      final context = await _horsePaymentContext(txn, data['horse_id']);
+      if (context?['subscriber_id'] == null) return;
+      final duplicate = await txn.query(
+        'payments',
+        columns: ['id'],
+        where:
+            'subscriber_id=? AND amount=? AND payment_date=? AND boarding_payment_id IS NOT NULL',
+        whereArgs: [
+          context!['subscriber_id'],
+          data['amount'],
+          data['payment_date'],
+        ],
+        limit: 1,
+      );
+      if (duplicate.isNotEmpty) {
+        throw const FormatException(
+          'هذه الدفعة مسجلة بالفعل للمشترك وتظهر تلقائيًا في ملف الخيل.',
+        );
+      }
+    }
+  }
+
+  Future<void> _syncPaymentLink(
+    Transaction txn,
+    int paymentId,
+    Map<String, Object?> data,
+  ) async {
+    final context = await _subscriberPaymentContext(txn, data['subscriber_id']);
+    var boardingId = (data['boarding_payment_id'] as num?)?.toInt();
+    final shouldLink =
+        context != null &&
+        context['is_boarding'] == true &&
+        context['horse_id'] != null;
+    if (!shouldLink) {
+      if (boardingId != null) {
+        await _deleteFinancialByRef(txn, 'boarding_payment', boardingId);
+        await txn.delete(
+          'boarding_payments',
+          where: 'id=? AND payment_id=?',
+          whereArgs: [boardingId, paymentId],
+        );
+      }
+      await txn.update(
+        'payments',
+        {'horse_id': null, 'boarding_payment_id': null},
+        where: 'id=?',
+        whereArgs: [paymentId],
+      );
+      data['horse_id'] = null;
+      data['boarding_payment_id'] = null;
+      return;
+    }
+
+    final boardingValues = <String, Object?>{
+      'horse_id': context['horse_id'],
+      'subscriber_id': context['subscriber_id'],
+      'amount': data['amount'],
+      'payment_date': data['payment_date'],
+      'is_paid': 1,
+      'payment_method': data['payment_method'],
+      'notes': data['notes'] ?? '',
+      'payment_id': paymentId,
+    };
+    if (boardingId == null ||
+        await txn.update(
+              'boarding_payments',
+              boardingValues,
+              where: 'id=?',
+              whereArgs: [boardingId],
+            ) ==
+            0) {
+      boardingId = await txn.insert('boarding_payments', boardingValues);
+    }
+    await txn.update(
+      'payments',
+      {'horse_id': context['horse_id'], 'boarding_payment_id': boardingId},
+      where: 'id=?',
+      whereArgs: [paymentId],
+    );
+    data['horse_id'] = context['horse_id'];
+    data['boarding_payment_id'] = boardingId;
+    await _deleteFinancialByRef(txn, 'payment', paymentId);
+  }
+
+  Future<void> _syncBoardingPaymentLink(
+    Transaction txn,
+    int boardingId,
+    Map<String, Object?> data,
+  ) async {
+    final context = await _horsePaymentContext(txn, data['horse_id']);
+    var paymentId = (data['payment_id'] as num?)?.toInt();
+    final paid = (data['is_paid'] as num? ?? 1) == 1;
+    if (!paid || context?['subscriber_id'] == null) {
+      if (paymentId != null) {
+        await _deleteFinancialByRef(txn, 'payment', paymentId);
+        await txn.delete(
+          'payments',
+          where: 'id=? AND boarding_payment_id=?',
+          whereArgs: [paymentId, boardingId],
+        );
+      }
+      await txn.update(
+        'boarding_payments',
+        {'subscriber_id': context?['subscriber_id'], 'payment_id': null},
+        where: 'id=?',
+        whereArgs: [boardingId],
+      );
+      data['subscriber_id'] = context?['subscriber_id'];
+      data['payment_id'] = null;
+      return;
+    }
+
+    final paymentValues = <String, Object?>{
+      'subscriber_id': context!['subscriber_id'],
+      'horse_id': context['horse_id'],
+      'amount': data['amount'],
+      'payment_date': data['payment_date'],
+      'payment_method': data['payment_method'],
+      'notes': data['notes'] ?? '',
+      'boarding_payment_id': boardingId,
+    };
+    if (paymentId == null ||
+        await txn.update(
+              'payments',
+              paymentValues,
+              where: 'id=?',
+              whereArgs: [paymentId],
+            ) ==
+            0) {
+      paymentId = await txn.insert('payments', paymentValues);
+    }
+    await txn.update(
+      'boarding_payments',
+      {'subscriber_id': context['subscriber_id'], 'payment_id': paymentId},
+      where: 'id=?',
+      whereArgs: [boardingId],
+    );
+    data['subscriber_id'] = context['subscriber_id'];
+    data['payment_id'] = paymentId;
+    await _deleteFinancialByRef(txn, 'payment', paymentId);
+  }
+
+  Future<void> _reconcilePaymentSources() async {
+    await db.transaction((txn) async {
+      // قيمة الاشتراك هي استحقاق تعاقدي وليست قبضًا ماليًا. الإيراد لا ينشأ
+      // إلا من سجل دفعة فعلي في أحد الملفين.
+      await txn.delete(
+        'financial_transactions',
+        where: "ref_type IN ('subscriber','subscription_history')",
+      );
+
+      final boardingRows = await txn.query(
+        'boarding_payments',
+        where: 'is_paid=1',
+        orderBy: 'payment_date, id',
+      );
+      for (final source in boardingRows) {
+        final boarding = Map<String, Object?>.from(source);
+        final boardingId = (boarding['id'] as num).toInt();
+        if (boarding['payment_id'] == null) {
+          final context = await _horsePaymentContext(txn, boarding['horse_id']);
+          final subscriberId = context?['subscriber_id'];
+          if (subscriberId != null) {
+            final matches = await txn.rawQuery(
+              '''SELECT * FROM payments
+                 WHERE subscriber_id=? AND boarding_payment_id IS NULL
+                   AND amount=?
+                   AND strftime('%Y-%m',payment_date)=strftime('%Y-%m',?)
+                 ORDER BY CASE WHEN payment_date=? THEN 0 ELSE 1 END, id
+                 LIMIT 1''',
+              [
+                subscriberId,
+                boarding['amount'],
+                boarding['payment_date'],
+                boarding['payment_date'],
+              ],
+            );
+            if (matches.isNotEmpty) {
+              final payment = matches.first;
+              final paymentId = (payment['id'] as num).toInt();
+              await txn.update(
+                'payments',
+                {
+                  'horse_id': boarding['horse_id'],
+                  'boarding_payment_id': boardingId,
+                },
+                where: 'id=?',
+                whereArgs: [paymentId],
+              );
+              await txn.update(
+                'boarding_payments',
+                {
+                  'subscriber_id': subscriberId,
+                  'payment_id': paymentId,
+                  'payment_method':
+                      boarding['payment_method'] ?? payment['payment_method'],
+                },
+                where: 'id=?',
+                whereArgs: [boardingId],
+              );
+              boarding['subscriber_id'] = subscriberId;
+              boarding['payment_id'] = paymentId;
+              boarding['payment_method'] =
+                  boarding['payment_method'] ?? payment['payment_method'];
+              await _deleteFinancialByRef(txn, 'payment', paymentId);
+            }
+          }
+        }
+        if (boarding['payment_id'] == null) {
+          await _syncBoardingPaymentLink(txn, boardingId, boarding);
+        }
+      }
+
+      final unlinkedPayments = await txn.query(
+        'payments',
+        where: 'boarding_payment_id IS NULL',
+        orderBy: 'payment_date, id',
+      );
+      for (final source in unlinkedPayments) {
+        final payment = Map<String, Object?>.from(source);
+        final context = await _subscriberPaymentContext(
+          txn,
+          payment['subscriber_id'],
+        );
+        if (context?['is_boarding'] == true && context?['horse_id'] != null) {
+          await _syncPaymentLink(txn, (payment['id'] as num).toInt(), payment);
+        }
+      }
+
+      final allBoarding = await txn.query('boarding_payments');
+      for (final source in allBoarding) {
+        final boarding = Map<String, Object?>.from(source);
+        await _syncFinancial(
+          txn,
+          'boarding_payments',
+          (boarding['id'] as num).toInt(),
+          boarding,
+          isNew: false,
+        );
+      }
+      final allPayments = await txn.query('payments');
+      for (final source in allPayments) {
+        final payment = Map<String, Object?>.from(source);
+        await _syncFinancial(
+          txn,
+          'payments',
+          (payment['id'] as num).toInt(),
+          payment,
+          isNew: false,
+        );
+      }
+    });
+  }
+
   Future<void> _syncFinancial(
     Transaction txn,
     String table,
@@ -568,22 +902,9 @@ class DatabaseService {
     String? refType;
     switch (table) {
       case 'subscribers':
-        if (!isNew || (data['amount'] as num? ?? 0) <= 0) return;
-        refType = 'subscriber';
-        tx = {
-          'type': 'income',
-          'amount': data['amount'],
-          'title': 'اشتراك - ${data['name']}',
-          'description': data['notes'] ?? '',
-          'source_type': 'subscriber',
-          'source_id': id,
-          'subscriber_id': id,
-          'horse_id': data['horse_id'],
-          'category': _subscriptionIncomeCategory(data['subscription_type']),
-          'payment_method': data['payment_method'],
-          'transaction_date': data['start_date'] ?? _today,
-        };
-        break;
+        // قيمة الاشتراك استحقاق وليست قبضًا؛ القبض ينشأ فقط من جدول الدفعات.
+        await _deleteFinancialByRef(txn, 'subscriber', id);
+        return;
       case 'daily_bookings':
         refType = 'booking';
         tx = {
@@ -600,6 +921,26 @@ class DatabaseService {
         break;
       case 'payments':
         refType = 'payment';
+        final boardingId = (data['boarding_payment_id'] as num?)?.toInt();
+        if (boardingId != null) {
+          await _deleteFinancialByRef(txn, refType, id);
+          final boarding = await txn.query(
+            'boarding_payments',
+            where: 'id=?',
+            whereArgs: [boardingId],
+            limit: 1,
+          );
+          if (boarding.isNotEmpty) {
+            await _syncFinancial(
+              txn,
+              'boarding_payments',
+              boardingId,
+              boarding.first,
+              isNew: false,
+            );
+          }
+          return;
+        }
         final sub = await txn.query(
           'subscribers',
           where: 'id=?',
@@ -644,6 +985,7 @@ class DatabaseService {
           'horse_id': data['horse_id'],
           'subscriber_id': horse.isEmpty ? null : horse.first['subscriber_id'],
           'category': 'إيواء',
+          'payment_method': data['payment_method'],
           'affects_budget': 1,
           'transaction_date': data['payment_date'],
         };
@@ -849,6 +1191,13 @@ class DatabaseService {
   Future<void> deleteRecord(String table, int id) async {
     _checkTable(table);
     await db.transaction((txn) async {
+      final currentRows = await txn.query(
+        table,
+        where: 'id=?',
+        whereArgs: [id],
+        limit: 1,
+      );
+      final current = currentRows.isEmpty ? null : currentRows.first;
       const refs = <String, String>{
         'expenses': 'expense',
         'daily_bookings': 'booking',
@@ -860,6 +1209,27 @@ class DatabaseService {
       };
       final ref = refs[table];
       if (ref != null) await _deleteFinancialByRef(txn, ref, id);
+      if (table == 'payments') {
+        final boardingId = (current?['boarding_payment_id'] as num?)?.toInt();
+        if (boardingId != null) {
+          await _deleteFinancialByRef(txn, 'boarding_payment', boardingId);
+          await txn.delete(
+            'boarding_payments',
+            where: 'id=? AND payment_id=?',
+            whereArgs: [boardingId, id],
+          );
+        }
+      } else if (table == 'boarding_payments') {
+        final paymentId = (current?['payment_id'] as num?)?.toInt();
+        if (paymentId != null) {
+          await _deleteFinancialByRef(txn, 'payment', paymentId);
+          await txn.delete(
+            'payments',
+            where: 'id=? AND boarding_payment_id=?',
+            whereArgs: [paymentId, id],
+          );
+        }
+      }
       if (table == 'expenses') {
         await txn.delete(
           'farrier_records',
@@ -872,6 +1242,44 @@ class DatabaseService {
           whereArgs: [id],
         );
       } else if (table == 'horses') {
+        final linked = await txn.rawQuery(
+          '''SELECT p.* FROM payments p
+             JOIN boarding_payments bp ON bp.payment_id=p.id
+             WHERE bp.horse_id=?''',
+          [id],
+        );
+        for (final source in linked) {
+          final payment = Map<String, Object?>.from(source)
+            ..['horse_id'] = null
+            ..['boarding_payment_id'] = null;
+          final paymentId = (payment['id'] as num).toInt();
+          await txn.update(
+            'payments',
+            {'horse_id': null, 'boarding_payment_id': null},
+            where: 'id=?',
+            whereArgs: [paymentId],
+          );
+          await _syncFinancial(
+            txn,
+            'payments',
+            paymentId,
+            payment,
+            isNew: false,
+          );
+        }
+        final boarding = await txn.query(
+          'boarding_payments',
+          columns: ['id'],
+          where: 'horse_id=?',
+          whereArgs: [id],
+        );
+        for (final row in boarding) {
+          await _deleteFinancialByRef(
+            txn,
+            'boarding_payment',
+            (row['id'] as num).toInt(),
+          );
+        }
         await txn.update(
           'financial_transactions',
           {'horse_id': null},
@@ -885,6 +1293,12 @@ class DatabaseService {
           whereArgs: [id],
         );
       } else if (table == 'subscribers') {
+        await txn.rawUpdate(
+          '''UPDATE boarding_payments SET subscriber_id=NULL, payment_id=NULL
+             WHERE subscriber_id=? OR payment_id IN
+               (SELECT id FROM payments WHERE subscriber_id=?)''',
+          [id, id],
+        );
         await txn.update(
           'financial_transactions',
           {'subscriber_id': null},
@@ -925,7 +1339,9 @@ class DatabaseService {
           limit: 1,
         );
         if (record.isNotEmpty) {
-          await _syncFinancial(txn, table, id, record.first, isNew: false);
+          final data = Map<String, Object?>.from(record.first);
+          await _syncRelationships(txn, table, id, data, isNew: false);
+          await _syncFinancial(txn, table, id, data, isNew: false);
         }
       }
     });
@@ -953,7 +1369,7 @@ class DatabaseService {
             ),
           ) ??
           0;
-      final historyId = await txn.insert('subscription_history', {
+      await txn.insert('subscription_history', {
         'subscriber_id': subscriberId,
         'subscription_number': count + 1,
         'subscription_type': current['subscription_type'],
@@ -982,24 +1398,12 @@ class DatabaseService {
         where: 'id=?',
         whereArgs: [subscriberId],
       );
-      final amount = (data['amount'] as num? ?? current['amount'] as num? ?? 0)
-          .toDouble();
-      if (amount > 0) {
-        await _upsertFinancial(txn, {
-          'type': 'income',
-          'amount': amount,
-          'title': 'تجديد اشتراك - ${current['name']}',
-          'description': data['notes'] ?? '',
-          'source_type': 'subscriber',
-          'source_id': subscriberId,
-          'subscriber_id': subscriberId,
-          'category': 'اشتراك',
-          'payment_method': data['payment_method'] ?? current['payment_method'],
-          'transaction_date': data['start_date'] ?? _today,
-          'ref_type': 'subscription_history',
-          'ref_id': historyId,
-        });
-      }
+      await txn.delete(
+        'financial_transactions',
+        where:
+            "ref_type='subscription_history' AND ref_id IN (SELECT id FROM subscription_history WHERE subscriber_id=?)",
+        whereArgs: [subscriberId],
+      );
     });
   }
 
@@ -1042,97 +1446,6 @@ class DatabaseService {
       'key': AppValidators.text(key, max: 100),
       'value': AppValidators.text(value, max: 20000),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
-  }
-
-  /// Inserts a small, internally consistent demo set only when the horse table
-  /// is empty. Existing user data is never changed or duplicated.
-  Future<bool> insertSampleData() async {
-    return db.transaction((txn) async {
-      final count =
-          Sqflite.firstIntValue(
-            await txn.rawQuery('SELECT COUNT(*) FROM horses'),
-          ) ??
-          0;
-      if (count > 0) return false;
-
-      final horses = <Map<String, Object?>>[
-        {
-          'name': 'الأصيل',
-          'breed': 'عربي أصيل',
-          'gender': 'ذكر',
-          'color': 'أبيض',
-          'chip_id': 'CH-001',
-          'birth_date': '2019-03-15',
-          'owner_name': 'أحمد محمد',
-          'stable_location': 'الإسطبل الرئيسي',
-          'health_status': 'جيدة',
-          'ownership_type': 'إيواء',
-        },
-        {
-          'name': 'الريح',
-          'breed': 'عربي أصيل',
-          'gender': 'أنثى',
-          'color': 'بني',
-          'chip_id': 'CH-002',
-          'birth_date': '2020-07-22',
-          'owner_name': 'خالد العلي',
-          'stable_location': 'الإسطبل الرئيسي',
-          'health_status': 'جيدة',
-          'ownership_type': 'إيواء',
-        },
-        {
-          'name': 'البرق',
-          'breed': 'إنجليزي',
-          'gender': 'ذكر',
-          'color': 'أسود',
-          'chip_id': 'CH-003',
-          'birth_date': '2018-11-10',
-          'owner_name': 'سعد الحربي',
-          'stable_location': 'الإسطبل الغربي',
-          'health_status': 'تحت العلاج',
-          'ownership_type': 'إيواء',
-        },
-      ];
-      final horseIds = <int>[];
-      for (final horse in horses) {
-        horseIds.add(await txn.insert('horses', horse));
-      }
-      await txn.insert('appointments', {
-        'horse_id': horseIds.first,
-        'appointment_type': 'تطعيم',
-        'title': 'موعد تطعيم سنوي',
-        'appointment_date': DateTime.now()
-            .add(const Duration(days: 7))
-            .toIso8601String()
-            .substring(0, 10),
-        'reminder_days': 3,
-        'status': 'مجدول',
-      });
-      await txn.insert('health_records', {
-        'horse_id': horseIds.first,
-        'record_type': 'فحص',
-        'title': 'فحص دوري',
-        'record_date': _today,
-        'notes': 'بيانات تجريبية',
-      });
-      await txn.insert('subscribers', {
-        'name': 'محمد العتيبي',
-        'phone': '0551234567',
-        'subscription_type': 'إيواء شهري',
-        'duration': '3 أشهر',
-        'amount': 3000,
-        'start_date': _today,
-        'end_date': DateTime.now()
-            .add(const Duration(days: 90))
-            .toIso8601String()
-            .substring(0, 10),
-        'status': 'نشط',
-        'payment_method': 'تحويل بنكي',
-        'linked_owner': 'أحمد محمد',
-        'horse_id': horseIds.first,
-      });
-      return true;
-    });
   }
 
   Future<List<Map<String, Object?>>> financialTransactions({

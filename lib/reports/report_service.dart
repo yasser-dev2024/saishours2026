@@ -869,7 +869,9 @@ class ReportService {
   Future<Uint8List> buildPdf(ReportData data) async {
     final fontData = await rootBundle.load('assets/fonts/NotoSansArabic.ttf');
     final font = pw.Font.ttf(fontData);
+    final clubName = await _clubName();
     final logoBytes = await _settingImage('report_logo');
+    final clubSignatureBytes = await _settingImage('club_signature');
     final reportImages = <MapEntry<String, Uint8List>>[];
     for (final image in data.images) {
       final file = File(image.path);
@@ -882,7 +884,7 @@ class ReportService {
     }
     final document = pw.Document(
       title: data.title,
-      author: 'سايس الخيل',
+      author: clubName,
       creator: 'Sayes Alkhayl Mobile',
     );
     document.addPage(
@@ -907,7 +909,7 @@ class ReportService {
                     pw.SizedBox(width: 7),
                   ],
                   pw.Text(
-                    'سايس الخيل',
+                    clubName,
                     style: pw.TextStyle(
                       fontSize: 11,
                       color: const PdfColor.fromInt(0xFF10233F),
@@ -1018,6 +1020,28 @@ class ReportService {
               ),
             ),
           ],
+          if (clubSignatureBytes != null) ...[
+            pw.SizedBox(height: 22),
+            pw.Align(
+              alignment: pw.Alignment.centerLeft,
+              child: pw.Column(
+                children: [
+                  pw.Text(
+                    'توقيع النادي',
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
+                  pw.SizedBox(height: 5),
+                  pw.Image(
+                    pw.MemoryImage(clubSignatureBytes),
+                    width: 145,
+                    height: 72,
+                    fit: pw.BoxFit.contain,
+                  ),
+                  pw.Text(clubName, style: const pw.TextStyle(fontSize: 9)),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1053,7 +1077,7 @@ class ReportService {
           'booking_time': 'الوقت',
         }),
         rows: [booking],
-        summary: ['شكرًا لاختياركم سايس الخيل'],
+        summary: const ['شكرًا لاختياركم خدمات النادي'],
       ),
     );
   }
@@ -1072,9 +1096,14 @@ class ReportService {
     final signatureBytes = await signature.exists()
         ? await signature.readAsBytes()
         : null;
+    final clubName = await _clubName();
     final logoBytes = await _settingImage('report_logo');
+    final clubSignatureBytes = await _settingImage('club_signature');
     final sealBytes = await _settingImage('club_seal');
-    final document = pw.Document(title: 'عقد إيواء - $subscriberName');
+    final document = pw.Document(
+      title: 'عقد إيواء - $subscriberName',
+      author: clubName,
+    );
     document.addPage(
       pw.MultiPage(
         textDirection: pw.TextDirection.rtl,
@@ -1084,6 +1113,12 @@ class ReportService {
             pw.Center(
               child: pw.Image(pw.MemoryImage(logoBytes), width: 74, height: 74),
             ),
+          pw.Center(
+            child: pw.Text(
+              clubName,
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            ),
+          ),
           pw.Center(
             child: pw.Text(
               'عقد الإيواء الإلكتروني',
@@ -1100,6 +1135,15 @@ class ReportService {
           pw.Text('التوقيع الإلكتروني:'),
           if (signatureBytes != null)
             pw.Image(pw.MemoryImage(signatureBytes), width: 180, height: 90),
+          if (clubSignatureBytes != null) ...[
+            pw.SizedBox(height: 12),
+            pw.Text('توقيع النادي:'),
+            pw.Image(
+              pw.MemoryImage(clubSignatureBytes),
+              width: 180,
+              height: 90,
+            ),
+          ],
           if (sealBytes != null) ...[
             pw.SizedBox(height: 12),
             pw.Text('ختم المنشأة:'),
@@ -1116,6 +1160,13 @@ class ReportService {
     if (path == null || path.isEmpty) return null;
     final file = File(path);
     return await file.exists() ? file.readAsBytes() : null;
+  }
+
+  Future<String> _clubName() async {
+    final value = (await DatabaseService.instance.getSetting(
+      'club_name',
+    ))?.trim();
+    return value == null || value.isEmpty ? 'نادي الخيل' : value;
   }
 
   static List<MapEntry<String, String>> _cols(Map<String, String> value) =>

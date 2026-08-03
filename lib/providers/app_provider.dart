@@ -36,6 +36,16 @@ class AppProvider extends ChangeNotifier {
       } catch (_) {
         // Notifications are useful but must never prevent access to local data.
       }
+      final channelVersion = await DatabaseService.instance.getSetting(
+        'mobile_notification_channel_version',
+      );
+      if (channelVersion != NotificationService.channelVersion) {
+        await DatabaseService.instance.setSetting('mobile_seen_alerts', '[]');
+        await DatabaseService.instance.setSetting(
+          'mobile_notification_channel_version',
+          NotificationService.channelVersion,
+        );
+      }
       await refresh(notify: false);
       if (permissionsSetupSeen) await _notifyNewAlerts();
     } catch (exception) {
@@ -126,6 +136,11 @@ class AppProvider extends ChangeNotifier {
   }
 
   Future<void> dataChanged() async {
+    await refresh();
+    await _notifyNewAlerts();
+  }
+
+  Future<void> onAppResumed() async {
     await refresh();
     await _notifyNewAlerts();
   }

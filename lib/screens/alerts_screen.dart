@@ -5,7 +5,6 @@ import '../core/entity_config.dart';
 import '../providers/app_provider.dart';
 import '../services/alert_actions.dart';
 import '../services/alert_sound_service.dart';
-import '../services/notification_service.dart';
 import 'entity_page.dart';
 
 class AlertsScreen extends StatefulWidget {
@@ -17,7 +16,6 @@ class AlertsScreen extends StatefulWidget {
 
 class _AlertsScreenState extends State<AlertsScreen> {
   String _filter = 'all';
-  String? _permissionMessage;
   String? _soundMessage;
   bool _testingSound = false;
 
@@ -94,10 +92,8 @@ class _AlertsScreenState extends State<AlertsScreen> {
               _MobileNotificationControls(
                 message:
                     _soundMessage ??
-                    _permissionMessage ??
-                    'فعّل الإشعارات واختبر صوت الإنذار الأساسي على الجهاز.',
+                    'الإشعارات وصوت jrs يعملان افتراضيًا بعد إذن Android الأول.',
                 testingSound: _testingSound,
-                onRequestPermission: _requestPermission,
                 onTestSound: _testSound,
                 onStopSound: _stopSound,
               )
@@ -109,18 +105,16 @@ class _AlertsScreenState extends State<AlertsScreen> {
                     ListTile(
                       leading: const Icon(Icons.notifications_active, size: 32),
                       title: const Text(
-                        'إشعارات الجهاز وصوت jrs.mp3',
+                        'إشعارات الجهاز وصوت jrs.mp3 الافتراضي',
                         style: TextStyle(fontWeight: FontWeight.w900),
                       ),
                       subtitle: Text(
                         _soundMessage ??
-                            _permissionMessage ??
-                            'فعّل الإشعارات واختبر صوت الإنذار الأساسي على الجهاز.',
+                            'لا يوجد زر تفعيل؛ يعمل الإنذار تلقائيًا بعد إذن Android الأول.',
                       ),
-                      trailing: FilledButton.tonalIcon(
-                        onPressed: _requestPermission,
-                        icon: const Icon(Icons.notifications_none),
-                        label: const Text('تفعيل'),
+                      trailing: const Chip(
+                        avatar: Icon(Icons.check_circle_outline, size: 18),
+                        label: Text('افتراضي'),
                       ),
                     ),
                     Padding(
@@ -253,37 +247,6 @@ class _AlertsScreenState extends State<AlertsScreen> {
     );
   }
 
-  Future<void> _requestPermission() async {
-    try {
-      final granted = await NotificationService.instance.requestPermission();
-      if (!mounted) return;
-      setState(() {
-        _permissionMessage = granted
-            ? 'تم تفعيل إشعارات سايس الخيل على هذا الجهاز.'
-            : 'الإذن غير مفعّل. يمكنك السماح به من إعدادات الجهاز.';
-      });
-      if (granted && mounted) {
-        await context.read<AppProvider>().dataChanged();
-      }
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            granted
-                ? 'تم تفعيل إشعارات الجهاز بنجاح'
-                : 'لم يتم منح إذن الإشعارات',
-          ),
-        ),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _permissionMessage =
-            'تعذّر طلب الإذن الآن، والتنبيهات داخل التطبيق ما زالت فعّالة.';
-      });
-    }
-  }
-
   Future<void> _testSound() async {
     setState(() {
       _testingSound = true;
@@ -324,14 +287,12 @@ class _MobileNotificationControls extends StatelessWidget {
   const _MobileNotificationControls({
     required this.message,
     required this.testingSound,
-    required this.onRequestPermission,
     required this.onTestSound,
     required this.onStopSound,
   });
 
   final String message;
   final bool testingSound;
-  final VoidCallback onRequestPermission;
   final VoidCallback onTestSound;
   final VoidCallback onStopSound;
 
@@ -391,24 +352,6 @@ class _MobileNotificationControls extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: FilledButton.tonalIcon(
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(0, 42),
-                    padding: const EdgeInsets.symmetric(horizontal: 7),
-                    textStyle: const TextStyle(
-                      fontFamily: 'NotoSansArabic',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  onPressed: onRequestPermission,
-                  icon: const Icon(Icons.notifications_none, size: 19),
-                  label: const Text('تفعيل', maxLines: 1),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                flex: 2,
                 child: FilledButton.icon(
                   style: FilledButton.styleFrom(
                     minimumSize: const Size(0, 42),

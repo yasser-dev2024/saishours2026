@@ -101,9 +101,7 @@ class _PermissionsSetupScreenState extends State<PermissionsSetupScreen> {
                               )
                             : const Icon(Icons.verified_user_outlined),
                         label: Text(
-                          _working
-                              ? 'جارٍ طلب الأذونات…'
-                              : 'تفعيل جميع الخصائص',
+                          _working ? 'جارٍ طلب الأذونات…' : 'السماح والمتابعة',
                         ),
                       ),
                     ),
@@ -145,7 +143,6 @@ class _PermissionsSetupScreenState extends State<PermissionsSetupScreen> {
           ),
         ),
       );
-      return;
     }
     await _continue();
   }

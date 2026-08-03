@@ -64,6 +64,15 @@ void main() {
       final subscriber = await database.row('subscribers', subscriberId);
       expect(subscriber?['member_code'], isNotEmpty);
       expect(subscriber?['horse_id'], horseId);
+      expect(
+        await database.db.query(
+          'financial_transactions',
+          where: 'ref_type=? AND ref_id=?',
+          whereArgs: ['subscriber', subscriberId],
+        ),
+        isEmpty,
+        reason: 'قيمة الاشتراك لا تُحتسب قبضًا قبل إدخال دفعة فعلية',
+      );
 
       await database.renewSubscription(subscriberId, {
         'subscription_type': 'إيواء + تدريب',
@@ -90,7 +99,27 @@ void main() {
         'payment_method': 'نقدي',
         'notes': marker,
       });
-      expect(await database.row('payments', paymentId), isNotNull);
+      final payment = await database.row('payments', paymentId);
+      expect(payment, isNotNull);
+      final boardingPaymentId = (payment!['boarding_payment_id'] as num)
+          .toInt();
+      final mirroredBoarding = await database.row(
+        'boarding_payments',
+        boardingPaymentId,
+      );
+      expect(mirroredBoarding?['payment_id'], paymentId);
+      final linkedIncome = await database.db.query(
+        'financial_transactions',
+        where: '(ref_type=? AND ref_id=?) OR (ref_type=? AND ref_id=?)',
+        whereArgs: [
+          'payment',
+          paymentId,
+          'boarding_payment',
+          boardingPaymentId,
+        ],
+      );
+      expect(linkedIncome, hasLength(1));
+      expect(linkedIncome.single['amount'], 300.0);
 
       final expenseId = await database.saveRecord('expenses', {
         'horse_id': horseId,
