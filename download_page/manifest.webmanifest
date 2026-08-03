@@ -1,0 +1,14 @@
+{
+  "name": "تحميل سايس الخيل",
+  "short_name": "سايس الخيل",
+  "description": "الصفحة الرسمية لتنزيل تطبيق سايس الخيل لأندرويد",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#F8F5EE",
+  "theme_color": "#10233F",
+  "icons": [
+    { "src": "assets/app-icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
