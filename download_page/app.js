@@ -99,8 +99,17 @@
   }
 
   const download = document.querySelector(".download-button");
+  const downloadToast = document.querySelector(".download-toast");
+  let downloadToastTimer;
   download?.addEventListener("pointerdown", () => download.classList.add("is-pressed"));
   ["pointerup", "pointercancel", "pointerleave"].forEach((type) => {
     download?.addEventListener(type, () => download.classList.remove("is-pressed"));
+  });
+  download?.addEventListener("click", () => {
+    downloadToast?.classList.add("is-visible");
+    window.clearTimeout(downloadToastTimer);
+    downloadToastTimer = window.setTimeout(() => {
+      downloadToast?.classList.remove("is-visible");
+    }, 8000);
   });
 })();
