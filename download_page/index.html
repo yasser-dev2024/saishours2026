@@ -3,113 +3,234 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#10233f">
-    <meta name="description" content="تنزيل تطبيق سايس الخيل لإدارة الخيول والإسطبل والمشتركين والمالية على أجهزة أندرويد.">
-    <title>تحميل سايس الخيل لأندرويد</title>
+    <meta name="theme-color" content="#0b1d35">
+    <meta name="description" content="سايس الخيل؛ تطبيق عربي متكامل لإدارة الخيول والإسطبل والمشتركين والاشتراكات والرعاية والمالية والتنبيهات والتقارير.">
+    <title>سايس الخيل — إدارة الإسطبل بذكاء</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" href="assets/app-icon.png">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="styles.css">
-    <script src="app.js" defer></script>
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="#top" aria-label="سايس الخيل — أعلى الصفحة">
-        <img src="assets/app-icon.png" width="58" height="58" alt="شعار سايس الخيل">
-        <span><strong>سايس الخيل</strong><small>إدارة الخيل والإسطبل</small></span>
-      </a>
-      <a class="header-link" href="#install">طريقة التثبيت</a>
+      <div class="header-inner">
+        <div class="brand">
+          <img src="assets/app-icon.png" width="58" height="58" alt="شعار سايس الخيل">
+          <span>
+            <strong>سايس الخيل</strong>
+            <small>إدارة الخيل والإسطبل</small>
+          </span>
+        </div>
+        <span class="header-badge">تطبيق عربي متكامل</span>
+      </div>
     </header>
 
-    <main id="top">
+    <main>
       <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-copy">
-          <p class="eyebrow">النسخة الرسمية لأندرويد</p>
-          <h1 id="hero-title">إدارة خيولك من أي مكان، حتى دون إنترنت</h1>
-          <p class="lead">ملف أندرويد كامل يضم الخيول والمشتركين والاشتراكات والحجوزات والعلاج والإيواء والتحذية والتمارين والمالية والتقارير والنسخ الاحتياطي، دون حذف أي خدمة من التطبيق الحالي.</p>
-          <div class="actions">
-            <a class="download-button" href="https://github.com/yasser-dev2024/saishours2026/releases/latest/download/HorseClub.apk" type="application/vnd.android.package-archive" data-download>
-              <span aria-hidden="true">↓</span>
-              تحميل تطبيق سايس الخيل للأندرويد
-            </a>
-            <span class="release-note">الإصدار 1.3.0 · 4 أغسطس 2026 · 58.36 م.ب · Android 6.0 فأحدث</span>
-          </div>
-          <div class="checksum" aria-label="بصمة الملف">
-            <div>
-              <span>SHA-256 للتحقق من سلامة الملف</span>
-              <code id="sha-value" dir="ltr" tabindex="0">DC5114F4469DCF77C04CA39EFC5D39EC51DCAD86FBFE3D40A7F24A24C88F42D5</code>
+        <div class="hero-glow hero-glow-one" aria-hidden="true"></div>
+        <div class="hero-glow hero-glow-two" aria-hidden="true"></div>
+        <div class="hero-inner">
+          <div class="hero-copy">
+            <p class="eyebrow"><span></span> رفيقك الذكي في إدارة الإسطبل</p>
+            <h1 id="hero-title">كل تفاصيل خيولك<br><em>في مكان واحد</em></h1>
+            <p class="lead">
+              من ملف الخيل والمشترك إلى الرعاية اليومية والاشتراكات والحسابات؛
+              يمنحك سايس الخيل رؤية واضحة وتحكمًا أسرع وتجربة عربية صُممت لتناسب عمل الإسطبل الحقيقي.
+            </p>
+            <div class="hero-points" aria-label="أهم مزايا التطبيق">
+              <span>يعمل دون إنترنت</span>
+              <span>جاهز دون مفتاح تفعيل</span>
+              <span>للجوال واللوحي</span>
             </div>
+            <a
+              class="download-button"
+              href="https://github.com/yasser-dev2024/saishours2026/releases/latest/download/HorseClub.apk"
+              type="application/vnd.android.package-archive"
+              aria-label="تحميل تطبيق سايس الخيل للأندرويد"
+            >
+              <span class="download-icon" aria-hidden="true">↓</span>
+              <span><small>حمّل النسخة الكاملة</small>سايس الخيل للأندرويد</span>
+            </a>
+            <p class="button-note">ابدأ إدارة إسطبلك بثقة وسهولة من أول يوم</p>
           </div>
-          <p class="download-status" id="download-status" role="status" aria-live="polite"></p>
-        </div>
-        <div class="device-card" aria-label="مزايا التطبيق">
-          <img src="assets/app-icon.png" width="170" height="170" alt="أيقونة تطبيق سايس الخيل">
-          <h2>سايس الخيل</h2>
-          <p>واجهة عربية آمنة وسريعة</p>
-          <ul>
-            <li>يعمل دون اتصال بالإنترنت</li>
-            <li>مفتوح مباشرة دون مفتاح تفعيل</li>
-            <li>قاعدة بيانات محلية ونسخ احتياطي</li>
-            <li>تقارير عضو وخيل شاملة بالصور</li>
-          </ul>
+
+          <div class="hero-visual" aria-label="تطبيق سايس الخيل">
+            <div class="orbit orbit-one" aria-hidden="true"></div>
+            <div class="orbit orbit-two" aria-hidden="true"></div>
+            <div class="app-showcase">
+              <span class="showcase-label">إدارة أذكى</span>
+              <img src="assets/app-icon.png" width="190" height="190" alt="أيقونة تطبيق سايس الخيل">
+              <h2>سايس الخيل</h2>
+              <p>إسطبلك دائمًا بين يديك</p>
+              <div class="showcase-stats">
+                <span><strong>360°</strong><small>رؤية متكاملة</small></span>
+                <span><strong>24/7</strong><small>متاح دائمًا</small></span>
+              </div>
+            </div>
+            <div class="floating-card floating-horse"><b>&#128014;</b><span>ملف خيل متكامل</span></div>
+            <div class="floating-card floating-alert"><b>&#128276;</b><span>تنبيهات ذكية</span></div>
+            <div class="floating-card floating-finance"><b>&#65020;</b><span>حسابات دقيقة</span></div>
+          </div>
         </div>
       </section>
 
-      <section class="section" aria-labelledby="features-title">
-        <p class="eyebrow">كل ما تحتاجه في الإسطبل</p>
-        <h2 id="features-title">وظائف متكاملة وليست مجرد شاشة عرض</h2>
-        <div class="features">
-          <article><span>🐎</span><h3>ملفات الخيول</h3><p>صور بالكاميرا، العلاج والغرف والتحذية والتمارين والمواعيد والخط الزمني.</p></article>
-          <article><span>👥</span><h3>المشتركون والعقود</h3><p>التجديدات والدفعات والفواتير وعقود الإيواء بالتوقيع الإلكتروني.</p></article>
-          <article><span>📅</span><h3>الحجوزات والمواعيد</h3><p>حجوزات يومية ومواعيد مرتبطة بالخيل مع الحالة والتذكير والفتح المباشر.</p></article>
-          <article><span>🩺</span><h3>الصحة والرعاية</h3><p>السجل الصحي والعلاج والأدوية والإيواء والغرف والتحذية واليومية والتمارين، مع الصور والمرفقات.</p></article>
-          <article><span>﷼</span><h3>المالية والتقارير</h3><p>ميزانية تفصل المخصوم وغير المخصوم وديون المشتركين، وتقارير PDF شاملة قابلة للمشاركة.</p></article>
-          <article><span>🔔</span><h3>تنبيهات فعّالة</h3><p>صوت jrs وتنبيه ملء الشاشة مع الاسم والنوع والسبب، وفتح القسم مباشرة أو تعديل الموعد وإخفاء التنبيه مع حفظ السجل.</p></article>
-          <article><span>📷</span><h3>الكاميرا والمرفقات</h3><p>التقاط صورة للخيل وإضافة صور العلاج والغرفة والتحذية والتمارين وبقية السجلات من الكاميرا أو المعرض.</p></article>
-          <article><span>🔒</span><h3>بياناتك معك</h3><p>تخزين محلي ونسخ احتياطية مفحوصة واستعادة آمنة دون إرسال بياناتك إلى خادم.</p></article>
+      <section class="trust-strip" aria-label="مزايا أساسية">
+        <div><span>&#10003;</span><p><strong>واجهة عربية واضحة</strong><small>سريعة وسهلة لكل مستخدم</small></p></div>
+        <div><span>&#10003;</span><p><strong>بياناتك تحت سيطرتك</strong><small>تخزين محلي ونسخ احتياطي</small></p></div>
+        <div><span>&#10003;</span><p><strong>مترابط من البداية</strong><small>كل سجل يصل إلى مكانه الصحيح</small></p></div>
+        <div><span>&#10003;</span><p><strong>جاهز للعمل الحقيقي</strong><small>إدارة يومية شاملة للإسطبل</small></p></div>
+      </section>
+
+      <section class="section intro-section" aria-labelledby="intro-title">
+        <div class="section-heading">
+          <p class="eyebrow"><span></span> أكثر من مجرد تطبيق</p>
+          <h2 id="intro-title">لوحة قيادة واحدة لإسطبل أكثر تنظيمًا</h2>
+          <p>
+            سايس الخيل يجمع التفاصيل التي تحتاجها كل يوم ويحوّلها إلى تجربة مترابطة؛
+            تعرف ما تم، وما يستحق المتابعة، وما يحتاج قرارك الآن.
+          </p>
+        </div>
+        <div class="value-grid">
+          <article>
+            <span class="value-number">01</span>
+            <h3>اعرف حالة الإسطبل فورًا</h3>
+            <p>ملخص واضح للخيول والمشتركين والمواعيد والحالات التي تحتاج متابعة.</p>
+          </article>
+          <article>
+            <span class="value-number">02</span>
+            <h3>احتفظ بكل التفاصيل</h3>
+            <p>ملفات وصور وسجلات مترابطة تعطيك تاريخًا كاملًا لكل خيل ومشترك.</p>
+          </article>
+          <article>
+            <span class="value-number">03</span>
+            <h3>اتخذ قرارك بثقة</h3>
+            <p>تنبيهات وتقارير وحسابات دقيقة تساعدك على المتابعة دون نسيان أو تكرار.</p>
+          </article>
         </div>
       </section>
 
-      <section class="section" aria-labelledby="screens-title">
-        <p class="eyebrow">واجهة عربية واضحة</p>
-        <h2 id="screens-title">مصمم للجوال والجهاز اللوحي</h2>
+      <section class="section feature-section" aria-labelledby="features-title">
+        <div class="section-heading centered">
+          <p class="eyebrow"><span></span> منظومة متكاملة</p>
+          <h2 id="features-title">كل ما يحتاجه الإسطبل في تطبيق واحد</h2>
+          <p>مزايا عملية تغطي الإدارة والرعاية والمالية، بتفاصيل دقيقة وتجربة استخدام مريحة.</p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card feature-card-wide">
+            <div class="feature-icon">&#128014;</div>
+            <div>
+              <h3>ملف شامل لكل خيل</h3>
+              <p>صورة مصغرة وبيانات أساسية وسجل زمني يضع قصة الخيل كاملة أمامك.</p>
+              <ul>
+                <li>العلاج والأدوية والتطعيمات</li>
+                <li>الإيواء والغرفة والتحذية</li>
+                <li>التمارين والرعاية اليومية</li>
+                <li>المواعيد والصور والمرفقات</li>
+              </ul>
+            </div>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">&#128101;</div>
+            <h3>المشتركون والعضويات</h3>
+            <p>ملف عضو متكامل يضم بياناته وخيوله واشتراكاته ودفعاته وتجديداته وحالته.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">&#128179;</div>
+            <h3>الاشتراكات والعقود</h3>
+            <p>إدارة مدد الاشتراك والتجديدات وعقود الإيواء والفواتير والتوقيع بصورة مرتبة.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">&#65020;</div>
+            <h3>مالية دقيقة ومترابطة</h3>
+            <p>إيرادات ومصروفات ودفعات وديون وميزانية واضحة، دون تكرار الدفعة بين الخيل والمشترك.</p>
+          </article>
+
+          <article class="feature-card feature-card-accent">
+            <div class="feature-icon">&#128276;</div>
+            <h3>تنبيهات لا تفوّت المهم</h3>
+            <p>تنبيه واضح باسم الخيل أو المشترك، مع سبب الموعد وصوت مميز وفتح مباشر للتفاصيل.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">&#128197;</div>
+            <h3>الحجوزات والمواعيد</h3>
+            <p>تنظيم الحجوزات اليومية والمواعيد القادمة وربط كل موعد بالخيل والسجل المناسب.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">&#128247;</div>
+            <h3>الكاميرا والمرفقات</h3>
+            <p>التقط صورة للخيل أو أضف صور العلاج والغرفة والتحذية والتمارين مباشرة إلى السجل.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">&#128202;</div>
+            <h3>تقارير وفواتير احترافية</h3>
+            <p>تقارير قابلة للمشاركة تحمل اسم النادي وشعاره وتوقيعه وختمه بأسلوب منظم.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">&#128737;</div>
+            <h3>خصوصية ونسخ احتياطي</h3>
+            <p>يبدأ التطبيق فارغًا ويحفظ بيانات كل إسطبل محليًا مع إنشاء النسخ واستعادتها بسهولة.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section screens-section" aria-labelledby="screens-title">
+        <div class="section-heading centered">
+          <p class="eyebrow"><span></span> تجربة مصممة للعربية</p>
+          <h2 id="screens-title">وضوح في العرض، سرعة في الوصول</h2>
+          <p>تصميم هادئ ومريح يجعل المعلومة المهمة أقرب، سواء استخدمت الجوال أو الجهاز اللوحي.</p>
+        </div>
         <div class="screenshots">
           <figure>
-            <img src="assets/screenshots/home.png" alt="لوحة التحكم في تطبيق سايس الخيل" loading="lazy">
-            <figcaption>لوحة تحكم مترابطة وجرس تنبيهات فعّال</figcaption>
+            <div class="screenshot-frame"><img src="assets/screenshots/home.png" alt="الرئيسية في تطبيق سايس الخيل" loading="lazy"></div>
+            <figcaption><strong>الرئيسية</strong><span>نظرة سريعة على حالة الإسطبل</span></figcaption>
+          </figure>
+          <figure class="featured-shot">
+            <div class="screenshot-frame"><img src="assets/screenshots/horse-details.png" alt="تفاصيل الخيل في تطبيق سايس الخيل" loading="lazy"></div>
+            <figcaption><strong>ملف الخيل</strong><span>كل التفاصيل والسجلات والصور</span></figcaption>
           </figure>
           <figure>
-            <img src="assets/screenshots/alerts.png" alt="مركز التنبيهات في تطبيق سايس الخيل" loading="lazy">
-            <figcaption>مركز للتنبيهات العاجلة والمواعيد والاشتراكات</figcaption>
-          </figure>
-          <figure>
-            <img src="assets/screenshots/horse-details.png" alt="ملف الخيل وأزرار الكاميرا في تطبيق سايس الخيل" loading="lazy">
-            <figcaption>ملف خيل كامل مع الكاميرا والعلاج والإيواء والتحذية والتمارين</figcaption>
+            <div class="screenshot-frame"><img src="assets/screenshots/alerts.png" alt="مركز التنبيهات في تطبيق سايس الخيل" loading="lazy"></div>
+            <figcaption><strong>مركز التنبيهات</strong><span>متابعة واضحة للمواعيد والاشتراكات</span></figcaption>
           </figure>
         </div>
       </section>
 
-      <section class="section install" id="install" aria-labelledby="install-title">
-        <div>
-          <p class="eyebrow">ثلاث خطوات فقط</p>
-          <h2 id="install-title">طريقة التثبيت</h2>
-          <ol>
-            <li><strong>نزّل الملف</strong><span>اضغط زر التحميل واحفظ ملف APK على جهاز أندرويد.</span></li>
-            <li><strong>اسمح من هذا المصدر</strong><span>إذا طلب أندرويد ذلك، فعّل السماح بتثبيت التطبيقات من المتصفح أو مدير الملفات المستخدم.</span></li>
-            <li><strong>ثبّت وافتح</strong><span>افتح الملف، اختر «تثبيت»، ثم شغّل «سايس الخيل» واستخدم جميع أقسامه مباشرةً دون مفتاح.</span></li>
-          </ol>
+      <section class="section details-section" aria-labelledby="details-title">
+        <div class="details-copy">
+          <p class="eyebrow"><span></span> ترابط يصنع الفرق</p>
+          <h2 id="details-title">المعلومة تدخل مرة واحدة وتخدمك في كل مكان</h2>
+          <p>
+            عندما تسجل دفعة أو موعدًا أو علاجًا، يظهر أثره في الملف المرتبط به ويصل إلى التقارير والتنبيهات
+            دون أن تعيد العمل أو تخشى تضاعف الأرقام. هكذا تصبح إدارة الإسطبل أبسط وأكثر دقة.
+          </p>
         </div>
-        <aside>
-          <h3>مهم قبل التحديث</h3>
-          <p>لا تحذف النسخة الحالية إذا كانت تحتوي بيانات. ثبّت الملف الجديد فوقها ليتم التحديث مع الحفاظ على البيانات، وأنشئ نسخة احتياطية أولًا.</p>
-          <a href="./downloads/HorseClub.apk.sha256" download>تنزيل ملف البصمة</a>
-        </aside>
+        <div class="details-list">
+          <div><span>01</span><p><strong>سجل واحد مترابط</strong><small>بين الخيل والمشترك والمالية</small></p></div>
+          <div><span>02</span><p><strong>تحديث لحظي</strong><small>للتنبيهات والمواعيد والتقارير</small></p></div>
+          <div><span>03</span><p><strong>تاريخ محفوظ</strong><small>للمراجعة والمتابعة عند الحاجة</small></p></div>
+          <div><span>04</span><p><strong>هوية ناديك</strong><small>في الفواتير والعقود والتقارير</small></p></div>
+        </div>
+      </section>
+
+      <section class="closing-section">
+        <img src="assets/app-icon.png" width="96" height="96" alt="">
+        <p class="eyebrow"><span></span> سايس الخيل</p>
+        <h2>إدارة احترافية تبدأ من تنظيم التفاصيل</h2>
+        <p>تطبيق واحد يرافق يومك، يحفظ سجلاتك، وينقل إدارة إسطبلك إلى مستوى أكثر وضوحًا وثقة.</p>
       </section>
     </main>
 
     <footer>
-      <img src="favicon.png" width="36" height="36" alt="">
-      <p><strong>سايس الخيل</strong><br><span>الإصدار 1.3.0 · الحزمة com.abuammar.horseclub</span></p>
+      <img src="favicon.png" width="42" height="42" alt="">
+      <p><strong>سايس الخيل</strong><span>إدارة الخيل والإسطبل بذكاء</span></p>
     </footer>
   </body>
 </html>
