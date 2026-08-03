@@ -12,7 +12,7 @@
 4. تأكد أن الزر ينزّل `HorseClub.apk` من GitHub Releases وأن نوعه `application/vnd.android.package-archive`.
 5. قارن SHA-256 للملف المنشور بالقيمة التالية:
 
-   `179681E673BE66434EE666821211D0E0210FAB200FD6D44E8D5C8FF347DD46F8`
+   `DC5114F4469DCF77C04CA39EFC5D39EC51DCAD86FBFE3D40A7F24A24C88F42D5`
 
 إعدادات الأمان ونوع ملف APK مضبوطة في `netlify.toml`، كما يوجد ملف `_headers` للتوافق. لا يلزم بناء JavaScript أو تثبيت حزم.
 
