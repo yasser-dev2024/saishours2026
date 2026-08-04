@@ -24,10 +24,19 @@ val hasEnvironmentSigning = listOf(
     environmentKeyPassword,
 ).all { !it.isNullOrBlank() }
 val hasReleaseSigning = keystorePropertiesFile.exists() || hasEnvironmentSigning
+val releaseBuildRequested = gradle.startParameter.taskNames.any {
+    it.contains("release", ignoreCase = true)
+}
+
+if (releaseBuildRequested && !hasReleaseSigning) {
+    throw GradleException(
+        "Release signing is not configured. Use scripts/build_release.ps1 with the protected Sayes Alkhayl key."
+    )
+}
 
 android {
     namespace = "com.abuammar.horseclub"
-    compileSdk = 36
+    compileSdk = 35
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -43,45 +52,35 @@ android {
     defaultConfig {
         applicationId = "com.abuammar.horseclub"
         minSdk = 23
-        targetSdk = 36
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
     signingConfigs {
-        create("release") {
-            if (keystorePropertiesFile.exists()) {
-                keyAlias = keystoreProperties["keyAlias"] as String
-                keyPassword = keystoreProperties["keyPassword"] as String
-                storeFile = file(keystoreProperties["storeFile"] as String)
-                storePassword = keystoreProperties["storePassword"] as String
-            } else if (hasEnvironmentSigning) {
-                keyAlias = environmentKeyAlias
-                keyPassword = environmentKeyPassword
-                storeFile = file(environmentStoreFile!!)
-                storePassword = environmentStorePassword
+        if (hasReleaseSigning) {
+            create("release") {
+                if (keystorePropertiesFile.exists()) {
+                    keyAlias = keystoreProperties["keyAlias"] as String
+                    keyPassword = keystoreProperties["keyPassword"] as String
+                    storeFile = file(keystoreProperties["storeFile"] as String)
+                    storePassword = keystoreProperties["storePassword"] as String
+                } else if (hasEnvironmentSigning) {
+                    keyAlias = environmentKeyAlias
+                    keyPassword = environmentKeyPassword
+                    storeFile = file(environmentStoreFile!!)
+                    storePassword = environmentStorePassword
+                }
             }
         }
     }
 
     buildTypes {
-        getByName("debug") {
-            if (hasEnvironmentSigning) {
+        release {
+            isDebuggable = false
+            if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
             }
-        }
-        release {
-            signingConfig = if (hasReleaseSigning) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
-            }
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
         }
     }
 }
