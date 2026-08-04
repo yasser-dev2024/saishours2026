@@ -34,6 +34,8 @@ migrate_working_dir/
 /build/
 /dist/
 /node_modules/
+/backup_before_android_rebuild/
+/android/.gradle/
 
 # Symbolication related
 app.*.symbols
@@ -50,6 +52,9 @@ app.*.map.json
 /android/key.properties
 *.jks
 *.keystore
+
+# The verified APK is intentionally published with the standalone Pages site.
+!docs/downloads/HorseClub.apk
 
 # Local device captures and generated release duplicates
 /device_tests/

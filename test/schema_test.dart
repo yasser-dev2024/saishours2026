@@ -7,7 +7,7 @@ import 'package:horse_club_mobile/utils/display_formatters.dart';
 void main() {
   test('اسم المنتج عربي وثابت', () {
     expect(AppConstants.appName, 'سايس الخيل');
-    expect(AppConstants.packageId, 'com.abuammar.sayesalkhayl.mobile2026');
+    expect(AppConstants.packageId, 'com.abuammar.horseclub.mobile2026');
     expect(AppConstants.version, '2.1.1');
   });
 

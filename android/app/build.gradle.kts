@@ -1,5 +1,5 @@
-import java.util.Properties
 import java.io.FileInputStream
+import java.util.Properties
 
 plugins {
     id("com.android.application")
@@ -10,41 +10,31 @@ plugins {
 
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
-}
-val propertiesStoreFile =
-    (keystoreProperties["storeFile"] as String?)?.let { file(it) }
-val hasPropertiesSigning =
-    keystorePropertiesFile.exists() &&
-        propertiesStoreFile?.exists() == true &&
-        !keystoreProperties.getProperty("storePassword").isNullOrBlank() &&
-        !keystoreProperties.getProperty("keyPassword").isNullOrBlank() &&
-        !keystoreProperties.getProperty("keyAlias").isNullOrBlank()
-val environmentStoreFile = System.getenv("HORSECLUB_STORE_FILE")
-val environmentStorePassword = System.getenv("HORSECLUB_STORE_PASSWORD")
-val environmentKeyAlias = System.getenv("HORSECLUB_KEY_ALIAS")
-val environmentKeyPassword = System.getenv("HORSECLUB_KEY_PASSWORD")
-val hasEnvironmentSigning = listOf(
-    environmentStoreFile,
-    environmentStorePassword,
-    environmentKeyAlias,
-    environmentKeyPassword,
-).all { !it.isNullOrBlank() } && file(environmentStoreFile ?: "").exists()
-val hasReleaseSigning = hasPropertiesSigning || hasEnvironmentSigning
 val releaseBuildRequested = gradle.startParameter.taskNames.any {
     it.contains("release", ignoreCase = true)
 }
 
-if (releaseBuildRequested && !hasReleaseSigning) {
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
+val releaseStoreFile = keystoreProperties.getProperty("storeFile")?.let { file(it) }
+val releaseSigningConfigured =
+    keystorePropertiesFile.exists() &&
+        releaseStoreFile?.exists() == true &&
+        !keystoreProperties.getProperty("storePassword").isNullOrBlank() &&
+        !keystoreProperties.getProperty("keyPassword").isNullOrBlank() &&
+        !keystoreProperties.getProperty("keyAlias").isNullOrBlank()
+
+if (releaseBuildRequested && !releaseSigningConfigured) {
     throw GradleException(
-            "Release signing is not configured. Use tools/build_android_apk.ps1 with the protected Sayes Alkhayl key."
+        "Release signing is not configured. See SIGNING-INSTRUCTIONS.txt.",
     )
 }
 
 android {
-    namespace = "com.abuammar.horseclub"
-    compileSdk = 35
+    namespace = "com.abuammar.horseclub.mobile2026"
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -58,29 +48,20 @@ android {
     }
 
     defaultConfig {
-        // This standalone application id cannot collide with any previously
-        // published HorseClub or Sayes Alkhayl installation on the device.
-        applicationId = "com.abuammar.sayesalkhayl.mobile2026"
+        applicationId = "com.abuammar.horseclub.mobile2026"
         minSdk = 21
-        targetSdk = 35
+        targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
     signingConfigs {
-        if (hasReleaseSigning) {
+        if (releaseSigningConfigured) {
             create("release") {
-                if (hasPropertiesSigning) {
-                    keyAlias = keystoreProperties["keyAlias"] as String
-                    keyPassword = keystoreProperties["keyPassword"] as String
-                    storeFile = propertiesStoreFile
-                    storePassword = keystoreProperties["storePassword"] as String
-                } else if (hasEnvironmentSigning) {
-                    keyAlias = environmentKeyAlias
-                    keyPassword = environmentKeyPassword
-                    storeFile = file(environmentStoreFile!!)
-                    storePassword = environmentStorePassword
-                }
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storeFile = releaseStoreFile
+                storePassword = keystoreProperties.getProperty("storePassword")
             }
         }
     }
@@ -88,7 +69,7 @@ android {
     buildTypes {
         release {
             isDebuggable = false
-            if (hasReleaseSigning) {
+            if (releaseSigningConfigured) {
                 signingConfig = signingConfigs.getByName("release")
             }
         }

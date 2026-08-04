@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 abstract final class AppConstants {
   static const appName = 'سايس الخيل';
-  static const packageId = 'com.abuammar.sayesalkhayl.mobile2026';
+  static const packageId = 'com.abuammar.horseclub.mobile2026';
   static const version = '2.1.1';
   static const databaseName = 'horses.db';
   static const databaseVersion = 5;
