@@ -8,6 +8,7 @@ void main() {
   test('اسم المنتج عربي وثابت', () {
     expect(AppConstants.appName, 'سايس الخيل');
     expect(AppConstants.packageId, 'com.abuammar.sayesalkhayl.mobile2026');
+    expect(AppConstants.version, '2.1.1');
   });
 
   test('يحافظ مخطط الجوال على الجداول التجارية الثمانية عشر', () {

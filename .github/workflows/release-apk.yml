@@ -5,7 +5,9 @@ on:
     branches:
       - main
     paths:
-      - "releases/Sayes-Alkhayl-v2.1.0.apk"
+      - "releases/Sayes-Alkhayl-v2.1.1-universal.apk"
+      - "releases/SHA256SUMS.txt"
+      - "releases/verify-apk.ps1"
       - ".github/workflows/release-apk.yml"
   workflow_dispatch:
 
@@ -19,12 +21,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Verify published SHA-256
+        shell: bash
+        run: cd releases && sha256sum -c SHA256SUMS.txt
+
       - name: Publish the verified Android APK
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          RELEASE_TAG="v2.1.0"
-          APK="releases/Sayes-Alkhayl-v2.1.0.apk"
+          RELEASE_TAG="v2.1.1"
+          APK="releases/Sayes-Alkhayl-v2.1.1-universal.apk"
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" "$APK" --clobber
@@ -32,7 +38,7 @@ jobs:
           else
             gh release create "$RELEASE_TAG" \
               "$APK" \
-              --title "سايس الخيل Android 2.1.0" \
-              --notes "إصدار تثبيت مستقل بهوية Android جديدة لمنع أي تعارض مع النسخ السابقة، مع دعم ARM وARM64 وx64 وAndroid 5.0 فأحدث." \
+              --title "سايس الخيل Android 2.1.1" \
+              --notes "APK عالمي Release موقّع لتطبيق سايس الخيل، يدعم Android 5.0 فأحدث وجميع معماريات Flutter Android ضمن ملف واحد." \
               --latest
           fi

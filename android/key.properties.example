@@ -1,4 +1,4 @@
 storePassword=CHANGE_ME
 keyPassword=CHANGE_ME
-keyAlias=horseclub
-storeFile=C:/absolute/path/outside/repository/horseclub-release.jks
+keyAlias=sayesalkhayl
+storeFile=C:/secure/path/outside/repository/sayes-alkhayl-release.jks

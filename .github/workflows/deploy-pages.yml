@@ -9,7 +9,10 @@ on:
       - "style.css"
       - "script.js"
       - "web_assets/**"
-      - "releases/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tools/build_web.mjs"
+      - "web-tests/**"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch:
 
@@ -32,11 +35,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Prepare the public download site
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Test and build the public site
         run: |
-          mkdir -p _site
-          cp index.html style.css script.js _site/
-          cp -R web_assets releases _site/
+          npm ci
+          npm run build
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -44,7 +52,7 @@ jobs:
       - name: Upload Android download page
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./_site
+          path: ./dist
 
       - name: Deploy to GitHub Pages
         id: deployment

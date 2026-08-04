@@ -13,6 +13,14 @@ val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
+val propertiesStoreFile =
+    (keystoreProperties["storeFile"] as String?)?.let { file(it) }
+val hasPropertiesSigning =
+    keystorePropertiesFile.exists() &&
+        propertiesStoreFile?.exists() == true &&
+        !keystoreProperties.getProperty("storePassword").isNullOrBlank() &&
+        !keystoreProperties.getProperty("keyPassword").isNullOrBlank() &&
+        !keystoreProperties.getProperty("keyAlias").isNullOrBlank()
 val environmentStoreFile = System.getenv("HORSECLUB_STORE_FILE")
 val environmentStorePassword = System.getenv("HORSECLUB_STORE_PASSWORD")
 val environmentKeyAlias = System.getenv("HORSECLUB_KEY_ALIAS")
@@ -22,15 +30,15 @@ val hasEnvironmentSigning = listOf(
     environmentStorePassword,
     environmentKeyAlias,
     environmentKeyPassword,
-).all { !it.isNullOrBlank() }
-val hasReleaseSigning = keystorePropertiesFile.exists() || hasEnvironmentSigning
+).all { !it.isNullOrBlank() } && file(environmentStoreFile ?: "").exists()
+val hasReleaseSigning = hasPropertiesSigning || hasEnvironmentSigning
 val releaseBuildRequested = gradle.startParameter.taskNames.any {
     it.contains("release", ignoreCase = true)
 }
 
 if (releaseBuildRequested && !hasReleaseSigning) {
     throw GradleException(
-        "Release signing is not configured. Use scripts/build_release.ps1 with the protected Sayes Alkhayl key."
+            "Release signing is not configured. Use tools/build_android_apk.ps1 with the protected Sayes Alkhayl key."
     )
 }
 
@@ -62,10 +70,10 @@ android {
     signingConfigs {
         if (hasReleaseSigning) {
             create("release") {
-                if (keystorePropertiesFile.exists()) {
+                if (hasPropertiesSigning) {
                     keyAlias = keystoreProperties["keyAlias"] as String
                     keyPassword = keystoreProperties["keyPassword"] as String
-                    storeFile = file(keystoreProperties["storeFile"] as String)
+                    storeFile = propertiesStoreFile
                     storePassword = keystoreProperties["storePassword"] as String
                 } else if (hasEnvironmentSigning) {
                     keyAlias = environmentKeyAlias
