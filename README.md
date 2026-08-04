@@ -68,4 +68,4 @@ adb -s DEVICE_ID install -r release\HorseClub.apk
 
 https://yasser-dev2024.github.io/saishours2026/
 
-زر Android ينزّل أصل الإصدار الرسمي `HorseClub.apk` من GitHub Releases، بينما تبقى بصمة SHA-256 داخل `download_page/downloads`. راجع `download_page/README.md` لتفاصيل الفحص والنشر.
+زر Android ينزّل الأصل الثابت `Sayes-Alkhayl-1.3.1.apk` مباشرةً من نطاق GitHub Pages ومجلد `download_page/downloads`. راجع `download_page/README.md` لتفاصيل الفحص والنشر.
