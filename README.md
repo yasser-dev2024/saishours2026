@@ -11,7 +11,7 @@
 - `lib/`: جميع وحدات سايس الخيل الوظيفية.
 - `android/`: مشروع Android/Gradle الأصلي.
 - `assets/`: الأيقونات والصور والخط والصوت المستخدم داخل التطبيق.
-- `releases/Sayes-Alkhayl-Android.apk`: ملف Android الكامل المنشور للتحميل.
+- `releases/Sayes-Alkhayl-v2.0.0.apk`: ملف Android الكامل المنشور للتحميل.
 - `index.html` و`style.css` و`script.js`: صفحة التنزيل الدعائية الجديدة.
 - `web_assets/`: صور صفحة الويب فقط.
 - `test/` و`integration_test/`: اختبارات الوظائف والترابط.

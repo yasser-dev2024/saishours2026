@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "releases/Sayes-Alkhayl-Android.apk"
+      - "releases/Sayes-Alkhayl-v2.0.0.apk"
       - ".github/workflows/release-apk.yml"
   workflow_dispatch:
 
@@ -24,10 +24,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           RELEASE_TAG="v2.0.0"
-          APK="releases/Sayes-Alkhayl-Android.apk"
+          APK="releases/Sayes-Alkhayl-v2.0.0.apk"
+          OLD_ASSET="Sayes-Alkhayl-Android.apk"
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" "$APK" --clobber
+            gh release delete-asset "$RELEASE_TAG" "$OLD_ASSET" --yes || true
             gh release edit "$RELEASE_TAG" --latest
           else
             gh release create "$RELEASE_TAG" \
