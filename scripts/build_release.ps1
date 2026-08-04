@@ -16,8 +16,7 @@ try {
     $env:HORSECLUB_STORE_PASSWORD = $plainPassword
     $env:HORSECLUB_KEY_ALIAS = 'sayesalkhayl'
     $env:HORSECLUB_KEY_PASSWORD = $plainPassword
-    # The public APK is intentionally limited to real Android phones/tablets.
-    # Excluding x86_64 keeps emulator-only native libraries out of the release.
+    # Keep one installable APK for 32-bit and 64-bit ARM phones/tablets.
     flutter build apk --release --target-platform android-arm,android-arm64
     if ($LASTEXITCODE -ne 0) {
         throw "Release build failed with exit code $LASTEXITCODE"

@@ -50,10 +50,10 @@ android {
     }
 
     defaultConfig {
-        // A fresh application id prevents Android from treating this build as an
-        // incompatible update of any earlier HorseClub package on the device.
-        applicationId = "com.abuammar.sayesalkhayl"
-        minSdk = 23
+        // This standalone application id cannot collide with any previously
+        // published HorseClub or Sayes Alkhayl installation on the device.
+        applicationId = "com.abuammar.sayesalkhayl.mobile2026"
+        minSdk = 21
         targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName

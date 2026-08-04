@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "releases/Sayes-Alkhayl-v2.0.1.apk"
+      - "releases/Sayes-Alkhayl-v2.1.0.apk"
       - ".github/workflows/release-apk.yml"
   workflow_dispatch:
 
@@ -23,8 +23,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          RELEASE_TAG="v2.0.1"
-          APK="releases/Sayes-Alkhayl-v2.0.1.apk"
+          RELEASE_TAG="v2.1.0"
+          APK="releases/Sayes-Alkhayl-v2.1.0.apk"
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" "$APK" --clobber
@@ -32,7 +32,7 @@ jobs:
           else
             gh release create "$RELEASE_TAG" \
               "$APK" \
-              --title "سايس الخيل Android 2.0.1" \
-              --notes "مشروع Android الجديد الكامل لتطبيق سايس الخيل. يشمل جميع وحدات الخيول والمشتركين والاشتراكات والحجوزات والرعاية والمالية والتنبيهات والتقارير والنسخ الاحتياطي، ويعمل دون إنترنت ودون مفتاح تفعيل." \
+              --title "سايس الخيل Android 2.1.0" \
+              --notes "إصدار تثبيت مستقل بهوية Android جديدة لمنع أي تعارض مع النسخ السابقة، مع دعم ARM وARM64 وx64 وAndroid 5.0 فأحدث." \
               --latest
           fi

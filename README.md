@@ -11,7 +11,7 @@
 - `lib/`: جميع وحدات سايس الخيل الوظيفية.
 - `android/`: مشروع Android/Gradle الأصلي.
 - `assets/`: الأيقونات والصور والخط والصوت المستخدم داخل التطبيق.
-- `releases/Sayes-Alkhayl-v2.0.1.apk`: ملف Android الكامل المنشور للتحميل، بهوية تثبيت مستقلة `com.abuammar.sayesalkhayl`.
+- `releases/Sayes-Alkhayl-v2.1.0.apk`: ملف Android الكامل المنشور للتحميل، بهوية تثبيت مستقلة `com.abuammar.sayesalkhayl.mobile2026` لا تتعارض مع أي إصدار سابق.
 - `index.html` و`style.css` و`script.js`: صفحة التنزيل الدعائية الجديدة.
 - `web_assets/`: صور صفحة الويب فقط.
 - `test/` و`integration_test/`: اختبارات الوظائف والترابط.
@@ -51,6 +51,11 @@ flutter test
 - `script.js`
 - `web_assets/`
 - `releases/`
+
+تستخدم أزرار التنزيل أصل GitHub Releases المباشر كي يستقبل Android ترويسة
+`Content-Disposition: attachment` ويُمرّر ملف APK إلى مدير التنزيل حتى في
+المتصفحات التي تتجاهل خاصية HTML `download`. تبقى النسخة الموجودة في
+`releases/` ضمن حزمة صفحة GitHub Pages للتحقق والرجوع إليها.
 
 الرابط العام:
 
