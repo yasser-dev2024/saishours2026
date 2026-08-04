@@ -22,13 +22,23 @@ const [page, script, styles, workflow, packageSource, builder] =
 const downloadTags = [
   ...page.matchAll(/<a\b[^>]*class="[^"]*\bdownload-link\b[^"]*"[^>]*>/g),
 ].map((match) => match[0]);
+const everyAnchorTag = [...page.matchAll(/<a\b[^>]*>/g)].map(
+  (match) => match[0],
+);
+const everyDownloadControl = everyAnchorTag.filter((tag) =>
+  /android-download|\.apk(?:["?#])|\b(?:header-download|primary-download|download-link|final-button|mobile-download)\b/i.test(
+    tag,
+  ),
+);
 const hrefs = downloadTags.map(
   (tag) => tag.match(/\bhref="([^"]+)"/)?.[1] ?? "",
 );
 
-test("renders Android download controls", () => {
+test("renders exactly one Android download button on the whole page", () => {
   assert.equal(downloadTags.length, 1);
-  assert.match(page, /تحميل (?:Android|التطبيق|سايس الخيل)/);
+  assert.deepEqual(everyDownloadControl, downloadTags);
+  assert.equal((page.match(/id="android-download"/g) ?? []).length, 1);
+  assert.doesNotMatch(page, /href="#android-download"/);
 });
 
 test("uses one official GitHub Raw source for every Android control", () => {
