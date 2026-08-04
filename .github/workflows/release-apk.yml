@@ -1,13 +1,13 @@
-name: Publish Sayes Alkhayl APK release
+name: Publish Sayes Alkhayl Android release
 
 on:
   push:
     branches:
       - main
-    tags:
-      - "v*"
     paths:
+      - "releases/Sayes-Alkhayl-Android.apk"
       - ".github/workflows/release-apk.yml"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -19,27 +19,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Prepare the stable download filename
-        run: cp "download_page/downloads/Sayes-Alkhayl-1.3.2.apk" "HorseClub.apk"
-
-      - name: Publish APK as the latest GitHub release
+      - name: Publish the verified Android APK
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
-            RELEASE_TAG="$GITHUB_REF_NAME"
-          else
-            RELEASE_TAG="v1.3.2"
-          fi
+          RELEASE_TAG="v2.0.0"
+          APK="releases/Sayes-Alkhayl-Android.apk"
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" "HorseClub.apk" --clobber
-            gh release delete-asset "$RELEASE_TAG" "Sayes-Alkhayl-1.3.2.apk" --yes || true
+            gh release upload "$RELEASE_TAG" "$APK" --clobber
             gh release edit "$RELEASE_TAG" --latest
           else
             gh release create "$RELEASE_TAG" \
-              "HorseClub.apk" \
-              --title "سايس الخيل 1.3.2" \
-              --notes "الإصدار الكامل 1.3.2 للأندرويد. ملف موحّد للجوال واللوحي، مبني على Android API 35 وموقّع بتوقيعي Android v1 وv2 للتوافق الواسع." \
+              "$APK" \
+              --title "سايس الخيل Android 2.0.0" \
+              --notes "مشروع Android الجديد الكامل لتطبيق سايس الخيل. يشمل جميع وحدات الخيول والمشتركين والاشتراكات والحجوزات والرعاية والمالية والتنبيهات والتقارير والنسخ الاحتياطي، ويعمل دون إنترنت ودون مفتاح تفعيل." \
               --latest
           fi

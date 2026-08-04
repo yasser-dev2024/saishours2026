@@ -1,11 +1,15 @@
-name: Deploy Sayes Alkhayl download page
+name: Deploy Sayes Alkhayl Android page
 
 on:
   push:
     branches:
       - main
     paths:
-      - "download_page/**"
+      - "index.html"
+      - "style.css"
+      - "script.js"
+      - "web_assets/**"
+      - "releases/**"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch:
 
@@ -27,12 +31,21 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Prepare the public download site
+        run: |
+          mkdir -p _site
+          cp index.html style.css script.js _site/
+          cp -R web_assets releases _site/
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-      - name: Upload download page
+
+      - name: Upload Android download page
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./download_page
+          path: ./_site
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
